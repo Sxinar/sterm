@@ -1,57 +1,51 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------
-# Proje: STerm - Terminal Ecosystem
+# Proje: STerm - Terminal Ecosystem (Titan-Pro)
 # Ekip: Kapsül Serix Takımı
-# Versiyon: 1.3 (GUI & OTA Removed - Performance Focused)
+# Versiyon: 1.3 (Sistem Güç Komutları & Root Erişimi)
 # ------------------------------------------------------------------
 
 import os
 import sys
 import getpass
 import socket
-import subprocess
+import shutil
+import platform
+import datetime
 
-def get_distro():
-    if os.path.exists("/usr/bin/pacman"): return "Arch"
-    elif os.path.exists("/usr/bin/apt"): return "Debian/Ubuntu"
-    return "Generic Linux"
+def show_banner():
+    os.system('clear')
+    print("\033[1;36m" + "█"*60)
+    print("  ⚡ STerm v1.3 TITAN-PRO - KAPSÜL SERIX ECOSYSTEM ⚡")
+    print(f"  SYSTEM: {platform.system()} | ROOT ACCESS: Enabled | DEV: kefe3")
+    print("  " + "█"*60 + "\033[0m")
 
 def print_help():
-    """Açılışta ve 'help' yazıldığında komutları listeler"""
-    print("\n\033[1;35m--- STerm v1.3 KOMUT REHBERİ ---")
-    print("\033[1;36m[Kapsül Kısayolları]")
-    print("  yd [dizin]   : Yer Değiştir (cd)")
-    print("  pd [dosya]   : Parça Depola (cp -r)")
-    print("  my [dosya]   : Metin Yaz (nano)")
-    print("  he [hedef]   : Hedefe Eriştir (mv)")
-    print("\033[1;32m[Temel İşlevler]")
-    print("  serix-get    : Akıllı Paket Yükleyici")
-    print("  check        : Sistem Analizi")
-    print("  speed        : Ağ Hız Testi")
-    print("\033[1;33m[Sistem]")
-    print("  help         : Bu rehberi gösterir")
-    print("  exit         : Güvenli Çıkış")
-    print("\033[1;35m--------------------------------\033[0m\n")
+    print("\n\033[1;35m--- ⚙️ SİSTEM YÖNETİM KOMUTLARI ---")
+    print("\033[1;31m[GÜÇ SEÇENEKLERİ]")
+    print("  kapat         : Bilgisayarı tamamen kapatır")
+    print("  yeniden       : Bilgisayarı yeniden başlatır")
+    print("  oturumu-kapat : Mevcut kullanıcı oturumunu sonlandırır")
+    print("  kilitle       : Ekranı kilitler (Güvenlik modu)")
+    print("\033[1;32m[YETKİ VE ERİŞİM]")
+    print("  serix-kök     : Kök kullanıcı (Root) yetkisi al (sudo su)")
+    print("\033[1;36m[DİĞER]")
+    print("  gezgin, analiz, günlük, temizle")
+    print("\033[1;35m------------------------------------\033[0m\n")
 
 def main():
-    user = getpass.getuser()
-    hostname = socket.gethostname()
-    distro = get_distro()
-    
-    os.system('clear')
-    print("\033[1;36m" + "="*55)
-    print("  ⚡ STerm v1.3 - KAPSÜL SERIX (PURE PERFORMANCE) ⚡")
-    print(f"  CORE: {distro} | STATUS: Optimized | DEV: kefe3")
-    print("  " + "="*55 + "\033[0m")
-    
-    # Açılışta komut rehberini göster
+    show_banner()
     print_help()
 
     while True:
         try:
             cwd = os.getcwd().replace(os.path.expanduser("~"), "~")
-            prompt = f"\033[1;33m[SERIX]\033[0m \033[1;32m{user}@{hostname}\033[0m:\033[1;34m{cwd}\033[0m$ "
+            # Root kontrolü (Eğer root ise prompt değişir)
+            if os.geteuid() == 0:
+                prompt = f"\033[1;31m[KÖK-SERIX]\033[0m \033[1;32m{getpass.getuser()}\033[0m:\033[1;34m{cwd}\033[0m# "
+            else:
+                prompt = f"\033[1;33m[SERIX-TITAN]\033[0m \033[1;32m{getpass.getuser()}\033[0m:\033[1;34m{cwd}\033[0m$ "
             
             user_input = input(prompt).strip()
             if not user_input: continue
@@ -60,35 +54,46 @@ def main():
             cmd = parts[0]
             args = " ".join(parts[1:])
 
-            # Kapsül Kısayolları
-            if cmd == "yd":
+            # --- GÜÇ KOMUTLARI ---
+            if cmd == "kapat":
+                os.system("sudo shutdown -h now")
+            elif cmd == "yeniden":
+                os.system("sudo reboot")
+            elif cmd == "oturumu-kapat":
+                # Dağıtıma göre logout komutu değişebilir (GNOME için)
+                os.system("gnome-session-quit --logout --no-prompt")
+            elif cmd == "kilitle":
+                # Ekran kilitleme (Linux genel)
+                os.system("xdg-screensaver lock")
+            
+            # --- YETKİ KOMUTLARI ---
+            elif cmd == "serix-kök":
+                print("\033[1;31m[UYARI] Kök erişimi başlatılıyor. Dikkatli olun!\033[0m")
+                os.system("sudo -s")
+            
+            # --- ÖNCEKİ SÜRÜM ÖZELLİKLERİ ---
+            elif cmd == "yd":
                 try: os.chdir(parts[1] if len(parts) > 1 else os.path.expanduser("~"))
-                except: print("\033[1;31mDizin bulunamadı.\033[0m")
+                except: print("Dizin bulunamadı.")
             elif cmd == "pd": os.system(f"cp -r {args}")
             elif cmd == "my": os.system(f"nano {args}")
             elif cmd == "he": os.system(f"mv {args}")
-            
-            # Ana Fonksiyonlar
-            elif cmd == "serix-get":
-                if distro == "Arch": os.system(f"sudo pacman -S {args}")
-                else: os.system(f"sudo apt update && sudo apt install -y {args}")
-            elif cmd == "check":
-                os.system("neofetch" if os.path.exists("/usr/bin/neofetch") else "uname -a")
-            elif cmd == "speed":
-                os.system("speedtest-cli" if os.path.exists("/usr/bin/speedtest-cli") else "ping -c 4 google.com")
-            
-            # Yardım ve Çıkış
-            elif cmd == "help": print_help()
-            elif cmd == "exit": break
-            
-            # Tanınmayan komutları Linux'a pasla
+            elif cmd == "gezgin":
+                items = os.listdir('.')
+                for i in items: print(f"-> {i}")
+            elif cmd == "analiz":
+                print(f"Sistem: {platform.uname().system}")
+            elif cmd == "temizle":
+                show_banner()
+            elif cmd == "exit":
+                break
             else:
                 os.system(user_input)
         
         except KeyboardInterrupt:
-            print("\n\033[1;31mÇıkış için 'exit' yazın.\033[0m")
-        except EOFError:
-            break
+            print("\nÇıkış için 'exit' yazın.")
+        except Exception as e:
+            print(f"Hata: {e}")
 
 if __name__ == "__main__":
     main()
