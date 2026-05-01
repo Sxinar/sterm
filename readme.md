@@ -50,6 +50,9 @@ Aşağıdaki dokümantasyon, STerm projesinin kurulum, kullanım, konfigürasyon
 * **Dosya ve Dizin Yönetimi:** Standart terminal işlemlerini (klasör oluşturma, silme, dizin değiştirme) ve disk analizi fonksiyonlarını sadeleştirir.
 * **Yerelleştirilmiş Arayüz:** Türkçeleştirilmiş ve standartlaştırılmış komut seti ile kullanım kolaylığı hedeflenmiştir.
 
+ <img width="719" height="719" alt="resim" src="https://github.com/user-attachments/assets/cdfa3c30-ffba-4437-a57d-27c29509b904" />
+
+
 ### 1.2. Sürüm Bilgisi ve Teknik Detaylar
 
 | Parametre | Detay |
