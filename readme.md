@@ -1,4 +1,4 @@
-
+## Vibe-Coding ile yapılmış bir hobi projesidir.
 # STerm - Kapsamlı Sistem Ekosistemi Dokümantasyonu
 
 STerm, terminal kullanımını optimize eden ve çeşitli yönetimsel araçları tek bir çatı altında toplayan, Python tabanlı bir sistem yönetim aracıdır. Kapsül Serix Takımı tarafından geliştirilmiştir ve sistem yöneticileri ile geliştiriciler için tasarlanmıştır.
