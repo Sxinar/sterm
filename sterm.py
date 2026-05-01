@@ -1,130 +1,192 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------
-# Proje: STerm - Terminal Ecosystem
-# Ekip: Kapsül Serix Takımı
-# Versiyon: 1.0 (Amber Edition)
-# Geliştirici: kefe3
+# [STerm] - Terminal Ecosystem v3.0
+# Optimized for: Fedora / Linux / Universal
 # ------------------------------------------------------------------
 
-import os
-import sys
-import getpass
-import socket
-import platform
-import subprocess
-import tkinter as tk
-from tkinter import messagebox
+import os, sys, getpass, socket, shutil, platform, datetime
+import webbrowser, subprocess, string, random, json, time
 
-def get_distro():
-    """Sistemin hangi tabanda olduğunu belirler."""
-    if os.path.exists("/usr/bin/pacman"):
-        return "Arch"
-    elif os.path.exists("/usr/bin/apt"):
-        return "Debian/Ubuntu"
-    return "Generic Linux"
+# --- OK TUŞLARI VE GEÇMİŞ DESTEĞİ ---
+try:
+    import readline
+    HISTORY_PATH = os.path.expanduser("~/.sterm_history")
+    if os.path.exists(HISTORY_PATH):
+        try: readline.read_history_file(HISTORY_PATH)
+        except: pass
+    readline.set_history_length(1000)
+    readline.parse_and_bind("tab: complete")
+except ImportError: pass
 
-def open_gui():
-    """Kapsül Serix Grafik Kontrol Panelini başlatır."""
-    root = tk.Tk()
-    root.title("SERIX OS - Amber Dashboard")
-    root.geometry("450x600")
-    root.configure(bg="#0d0d0d")
+class Style:
+    # Cyberpunk Renk Paleti
+    CYAN = '\033[38;5;51m'
+    BLUE = '\033[38;5;39m'
+    PURPLE = '\033[38;5;141m'
+    GOLD = '\033[38;5;220m'
+    RED = '\033[38;5;196m'
+    GREEN = '\033[38;5;82m'
+    GRAY = '\033[38;5;240m'
+    WHITE = '\033[38;5;255m'
+    BOLD = '\033[1m'
+    RESET = '\033[0m'
+    CLEAR = '\033[2J\033[H'
 
-    # Başlık
-    title = tk.Label(root, text="KAPSÜL SERIX", fg="#00ccff", bg="#0d0d0d", font=("Courier", 20, "bold"))
-    title.pack(pady=25)
+NOTLAR_FILE = "sterm_notlar.txt"
 
-    subtitle = tk.Label(root, text="Terminal Control System v1.0", fg="#555", bg="#0d0d0d", font=("Courier", 10))
-    subtitle.pack(pady=5)
+def banner_goster():
+    print(Style.CLEAR, end="")
+    # Büyük STerm Logosu
+    print(f"""
+    {Style.CYAN}{Style.BOLD}     ██████╗████████╗███████╗██████╗ ███╗   ███╗
+    {Style.CYAN}    ██╔════╝╚══██╔══╝██╔════╝██╔══██╗████╗ ████║
+    {Style.BLUE}    ╚█████╗    ██║   █████╗  ██████╔╝██╔████╔██║
+    {Style.BLUE}     ╚═══██╗   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║
+    {Style.PURPLE}    ██████╔╝   ██║   ███████╗██║  ██║██║ ╚═╝ ██║
+    {Style.PURPLE}    ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ {Style.WHITE}v3.0{Style.RESET}""")
 
-    # Buton Fonksiyonları
-    def run_cmd(command):
-        root.destroy()
-        os.system(command)
+    # Alt Bilgi Satırı
+    info = f"{Style.GRAY}Host: {Style.WHITE}{socket.gethostname()} {Style.GRAY}| User: {Style.WHITE}{getpass.getuser()} {Style.GRAY}| OS: {Style.WHITE}{platform.system()}"
+    print(f"\n{info.center(75)}")
+    print(f"{Style.GRAY}─" * 70)
+    print(f" {Style.GREEN}»{Style.RESET} Sistem hazır. Komut listesi için {Style.GOLD}'yardim'{Style.RESET} yazın.")
+    print(f" {Style.GREEN}»{Style.RESET} Geçmişte gezmek için {Style.GOLD}Üst/Alt Ok{Style.RESET} tuşlarını kullanın.{Style.RESET}\n")
 
-    # Buton Tasarımı
-    btn_style = {"bg": "#1a1a1a", "fg": "#eee", "font": ("Arial", 11), "width": 25, "pady": 8}
+def yardim_listele():
+    print(f"\n{Style.PURPLE}╔═════════════════════════ KOMUT REHBERİ ═════════════════════════╗{Style.RESET}")
 
-    tk.Button(root, text="Sistemi Güncelle", command=lambda: run_cmd("sterm update"), **btn_style).pack(pady=10)
-    tk.Button(root, text="Sistem Analizi", command=lambda: run_cmd("sterm check"), **btn_style).pack(pady=10)
-    tk.Button(root, text="Hız Testi (Internet)", command=lambda: run_cmd("sterm speed"), **btn_style).pack(pady=10)
-    tk.Button(root, text="Chroot'a Bağlan", command=lambda: run_cmd("sudo ./bin/arch-chroot ."), **btn_style).pack(pady=10)
-    
-    tk.Label(root, text="--------------------------", fg="#333", bg="#0d0d0d").pack(pady=15)
-    
-    tk.Button(root, text="PANELİ KAPAT", command=root.destroy, bg="#aa0000", fg="white", font=("Arial", 10, "bold"), width=20).pack(pady=10)
+    rehber = [
+        ("analiz", "Sistem donanımı ve yazılım detaylarını raporlar."),
+        ("saat", "Saniyelik hassasiyetle güncel zamanı gösterir."),
+        ("temizle", "Ekranı temizler ve STerm arayüzünü yeniler."),
+        ("gezgin", "Bulunduğunuz dizindeki dosya ve klasörleri listeler."),
+        ("yd [yol]", "Dizinler arası geçiş yapar (Örn: yd /home)."),
+        ("oku [dosya]", "Metin tabanlı dosyaların içeriğini ekrana basar."),
+        ("boyut [dosya]", "Dosyanın diskte kapladığı alanı (KB/MB) hesaplar."),
+        ("hava [şehir]", "Belirtilen şehrin anlık hava durumunu çeker."),
+        ("hesapla [işlem]", "Matematiksel işlemleri anında çözer (Örn: 25*4)."),
+        ("parola", "14 karakterli, sembol içeren güvenli şifre üretir."),
+        ("ip_bul", "Yerel ağ (Local IP) adresinizi görüntüler."),
+        ("not-al [not]", "Hızlıca not alır ve veritabanına kaydeder."),
+        ("notlari-gor", "Kaydettiğiniz tüm notları kronolojik listeler."),
+        ("not-duzenle", "Not dosyasını sistemin varsayılan editörüyle açar."),
+        ("web [url]", "Belirtilen adresi varsayılan tarayıcıda açar."),
+        ("çıkış", "STerm oturumunu güvenli bir şekilde sonlandırır.")
+    ]
 
-    root.mainloop()
+    for cmd, desc in rehber:
+        print(f"{Style.PURPLE}║ {Style.CYAN}{cmd:<15} {Style.GRAY}→ {Style.WHITE}{desc:<47} {Style.PURPLE}║{Style.RESET}")
+
+    print(f"{Style.PURPLE}╚══════════════════════════════════════════════════════════════════╝{Style.RESET}\n")
 
 def main():
-    user = getpass.getuser()
-    hostname = socket.gethostname()
-    distro = get_distro()
-    
-    os.system('clear')
-    print("\033[1;36m" + "="*50)
-    print("  ⚡ STerm v1.0 - KAPSÜL SERIX TAKIMI ⚡")
-    print("  " + "="*50)
-    print(f"  CORE: {distro} | STATUS: Active | DEV: kefe3")
-    print("="*50 + "\033[0m")
-
+    banner_goster()
     while True:
         try:
+            user = getpass.getuser()
             cwd = os.getcwd().replace(os.path.expanduser("~"), "~")
-            prompt = f"\033[1;33m[SERIX]\033[0m \033[1;32m{user}@{hostname}\033[0m:\033[1;34m{cwd}\033[0m$ "
-            
-            user_input = input(prompt).strip()
-            if not user_input: continue
-            
-            parts = user_input.split()
-            cmd = parts[0]
 
-            if cmd == "exit":
-                print("\033[1;31mKapsül Serix bağlantısı kesiliyor...\033[0m")
-                break
-            
-            elif cmd == "gui":
-                print("\033[1;35mAmber Dashboard başlatılıyor...\033[0m")
-                open_gui()
+            # Ultra Modern Prompt
+            prompt = f"{Style.PURPLE}┌──<{Style.CYAN}{user}@{socket.gethostname()}{Style.PURPLE}>─[{Style.GOLD}{cwd}{Style.PURPLE}]\n{Style.PURPLE}└─{Style.BLUE}❯{Style.RESET} "
 
-            elif cmd == "serix-get":
-                target = " ".join(parts[1:])
-                if distro == "Arch":
-                    os.system(f"sudo pacman -S --noconfirm {target}")
+            giris = input(prompt).strip()
+            if not giris: continue
+
+            if 'readline' in sys.modules:
+                try: readline.write_history_file(HISTORY_PATH)
+                except: pass
+
+            p = giris.split()
+            cmd = p[0].lower()
+            args = " ".join(p[1:])
+
+            # --- KOMUT MOTORU ---
+            if cmd == "yardim":
+                yardim_listele()
+
+            elif cmd == "analiz":
+                print(f" {Style.BLUE}● OS: {Style.WHITE}{platform.system()} {platform.release()}")
+                print(f" {Style.BLUE}● İşlemci: {Style.WHITE}{platform.processor()}")
+                print(f" {Style.BLUE}● Çekirdek: {Style.WHITE}{platform.machine()}")
+
+            elif cmd == "saat":
+                print(f" {Style.GOLD}⌚ Zaman: {datetime.datetime.now().strftime('%H:%M:%S')}{Style.RESET}")
+
+            elif cmd == "temizle":
+                banner_goster()
+
+            elif cmd == "gezgin":
+                print(f"{Style.GRAY}─ Dosya Listesi ───────────────{Style.RESET}")
+                for item in sorted(os.listdir('.')):
+                    color = Style.CYAN if os.path.isdir(item) else Style.WHITE
+                    mark = "📁" if os.path.isdir(item) else "📄"
+                    print(f" {mark} {color}{item}{Style.RESET}")
+
+            elif cmd == "yd":
+                try: os.chdir(args if args else os.path.expanduser("~"))
+                except: print(f" {Style.RED}✘ Hata: Yol bulunamadı.{Style.RESET}")
+
+            elif cmd == "oku":
+                if not args: print(f" {Style.RED}✘ Hata: Dosya ismi belirtmediniz.{Style.RESET}")
                 else:
-                    os.system(f"sudo apt update && sudo apt install -y {target}")
+                    try:
+                        with open(args, 'r', encoding='utf-8') as f:
+                            print(f"\n{Style.GRAY}--- {args} ---\n{Style.WHITE}{f.read()}\n{Style.GRAY}--- SON ---{Style.RESET}\n")
+                    except: print(f" {Style.RED}✘ Hata: Dosya okunamadı.{Style.RESET}")
 
-            elif cmd == "check":
-                print("\n\033[1;32m[SİSTEM DURUMU]\033[0m")
-                os.system("free -h")
-                os.system("df -h / | tail -1")
+            elif cmd == "boyut":
+                if os.path.exists(args):
+                    s = os.path.getsize(args)
+                    print(f" {Style.BLUE}⚖ Boyut: {round(s/1024, 2)} KB ({s} byte){Style.RESET}")
+                else: print(f" {Style.RED}✘ Hata: Nesne bulunamadı.{Style.RESET}")
 
-            elif cmd == "speed":
-                print("\033[1;33mİnternet hızı ölçülüyor (Kapsül Test)...\033[0m")
-                os.system("curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -")
+            elif cmd == "hava":
+                os.system(f"curl -s wttr.in/{args if args else 'Istanbul'}?lang=tr")
 
-            elif cmd == "help":
-                print("\n\033[1;35m--- STerm v1.0 Komut Listesi ---\033[0m")
-                print(" gui          : Grafik kontrol panelini açar.")
-                print(" serix-get    : Hibrit paket yükleyici.")
-                print(" check        : RAM ve Disk durumunu gösterir.")
-                print(" speed        : İnternet hızını ölçer.")
-                print(" clear        : Ekranı temizler.")
-                print(" exit         : Kapsül Serix'ten çıkar.")
-                print("--------------------------------\n")
+            elif cmd == "hesapla":
+                try: print(f" {Style.GREEN}Σ Sonuç: {eval(args)}{Style.RESET}")
+                except: print(f" {Style.RED}✘ Hata: Geçersiz işlem.{Style.RESET}")
 
-            elif cmd == "clear":
-                os.system('clear')
+            elif cmd == "parola":
+                chars = string.ascii_letters + string.digits + "!@#$%^&*"
+                p_gen = ''.join(random.choice(chars) for _ in range(14))
+                print(f" {Style.GOLD}🔑 Üretilen Parola: {Style.WHITE}{p_gen}{Style.RESET}")
+
+            elif cmd == "ip_bul":
+                print(f" {Style.CYAN}🌐 Yerel IP: {socket.gethostbyname(socket.gethostname())}{Style.RESET}")
+
+            elif cmd == "web":
+                print(f" {Style.CYAN}🌐 Tarayıcı açılıyor: {args}{Style.RESET}")
+                webbrowser.open(args if args.startswith("http") else "https://" + args)
+
+            elif cmd == "not-al":
+                with open(NOTLAR_FILE, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now().strftime('%d/%m %H:%M')}] {args}\n")
+                print(f" {Style.GREEN}✔ Not başarıyla kaydedildi.{Style.RESET}")
+
+            elif cmd == "not-duzenle":
+                editor = os.environ.get('EDITOR', 'nano' if os.name != 'nt' else 'notepad')
+                subprocess.call([editor, NOTLAR_FILE])
+
+            elif cmd in ["notlari-gor", "notları-gör"]:
+                if os.path.exists(NOTLAR_FILE):
+                    print(f"\n{Style.PURPLE}--- KAYITLI NOTLAR ---{Style.RESET}")
+                    with open(NOTLAR_FILE, 'r', encoding='utf-8') as f:
+                        print(f"{Style.WHITE}{f.read()}")
+                else: print(f" {Style.RED}✘ Veri bulunamadı.{Style.RESET}")
+
+            elif cmd in ["exit", "çıkış", "quit"]:
+                print(f"\n {Style.RED}STerm kapatılıyor...{Style.RESET}"); break
 
             else:
-                # Bilinmeyen komutları sistemin kendisine gönderir
-                os.system(user_input)
-        
-        except KeyboardInterrupt:
-            print("\n\033[1;31mÇıkmak için 'exit' yazın.\033[0m")
-        except EOFError:
-            break
+                # Eğer STerm komutu değilse Bash'e gönder
+                os.system(giris)
+
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n {Style.RED}Bağlantı kesildi.{Style.RESET}"); break
+        except Exception as e:
+            print(f" {Style.RED}!! Hata: {e}{Style.RESET}")
 
 if __name__ == "__main__":
     main()
