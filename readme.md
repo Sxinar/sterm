@@ -1,4 +1,4 @@
-```markdown
+
 # STerm - Kapsamlı Sistem Ekosistemi Dokümantasyonu
 
 STerm, terminal kullanımını optimize eden ve çeşitli yönetimsel araçları tek bir çatı altında toplayan, Python tabanlı bir sistem yönetim aracıdır. Kapsül Serix Takımı tarafından geliştirilmiştir ve sistem yöneticileri ile geliştiriciler için tasarlanmıştır.
@@ -464,4 +464,3 @@ Sonuç olarak projenin modüler yapısı, sistem üzerindeki komut yoğunluğunu
 **Lisans Bilgisi:** Proje açık kaynak (open source) standartları altında geliştirilmiş olup, referans gösterilmek suretiyle geliştirme ortamlarında kullanılabilir.
 
 Her türlü raporlama, geri bildirim veya geliştirme önerisi için GitHub üzerindeki ilgili "Issues" bölümünü ziyaret edebilir veya kaynak kod havuzunu detaylı biçimde inceleyebilirsiniz.
-```
