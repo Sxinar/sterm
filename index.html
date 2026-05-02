@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STerm v3.0 Simulation</title>
+    <style>
+        body, html { height: 100%; margin: 0; background-color: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; }
+        #terminal { width: 95vw; height: 90vh; background-color: #1e1e1e; border: 1px solid #333; padding: 20px; box-sizing: border-box; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .ascii-art { color: #8e44ad; white-space: pre; font-size: 0.6rem; line-height: 1; margin-bottom: 10px; }
+        .msg { color: #2ecc71; margin-bottom: 5px; }
+        .prompt { color: #3498db; display: inline; font-weight: bold; }
+        .cursor { display: inline-block; width: 8px; height: 16px; background-color: #d4d4d4; animation: blink 0.8s infinite; vertical-align: middle; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .table-pre { color: #9b59b6; font-size: 0.85rem; margin: 10px 0; border: 1px solid #9b59b6; padding: 10px; display: inline-block; }
+        .cmd-output { color: #f1c40f; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="terminal">
+    <div class="ascii-art" id="ascii"></div>
+    <div id="output"></div>
+    <div id="active-line"></div>
+</div>
+
+<script>
+    const ascii = `
+ ██████╗████████╗███████╗██████╗ ███╗   ███╗
+██╔════╝╚══██╔══╝██╔════╝██╔══██╗████╗ ████║
+╚█████╗    ██║   █████╗  ██████╔╝██╔████╔██║
+ ╚═══██╗   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║
+██████╔╝   ██║   ███████╗██║  ██║██║ ╚═╝ ██║
+╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ v3.0`;
+
+    const fullHelp = `
+┌──────────────────────────── KOMUT REHBERİ ────────────────────────────┐
+│ analiz        → Sistem donanımı ve yazılım detaylarını raporlar.      │
+│ saat          → Saniyelik hassasiyetle güncel zamanı gösterir.        │
+│ temizle       → Ekranı temizler ve STerm arayüzünü yeniler.           │
+│ gezgin        → Bulunduğunuz dizindeki dosya ve klasörleri listeler.  │
+│ yd [yol]      → Dizinler arası geçiş yapar (Örn: yd /home).           │
+│ oku [dosya]   → Metin tabanlı dosyaların içeriğini ekrana basar.      │
+│ boyut [dosya] → Dosyanın diskte kapladığı alanı (KB/MB) hesaplar.     │
+│ hava [şehir]  → Belirtilen şehrin anlık hava durumunu çeker.          │
+│ hesapla [işlem]→ Matematiksel işlemleri anında çözer (Örn: 25*4).     │
+│ parola        → 14 karakterli, sembol içeren güvenli şifre üretir.    │
+│ ip_bul        → Yerel ağ (Local IP) adresinizi görüntüler.            │
+│ not-al [not]  → Hızlıca not alır ve veritabanına kaydeder.            │
+│ notlari-gor   → Kaydettiğiniz tüm notları kronolojik listeler.        │
+│ not-duzenle   → Not dosyasını sistemin varsayılan editörüyle açar.    │
+│ web [url]     → Belirtilen adresi varsayılan tarayıcıda açar.         │
+│ çıkış         → STerm oturumunu güvenli bir şekilde sonlandırır.      │
+└───────────────────────────────────────────────────────────────────────┘`;
+
+    const output = document.getElementById('output');
+    const activeLine = document.getElementById('active-line');
+
+    async function type(text) {
+        const span = document.createElement('span');
+        activeLine.innerHTML = '<div class="prompt">root@fedora:[~/sterm] </div>';
+        activeLine.appendChild(span);
+        for (let char of text) {
+            span.innerHTML += char;
+            await new Promise(r => setTimeout(r, 60));
+        }
+    }
+
+    async function run() {
+        document.getElementById('ascii').innerText = ascii;
+        output.innerHTML += '<div class="msg">» Sistem hazır.</div>';
+        
+        // Yardım komutunu yaz ve tüm listeyi göster
+        await type('yardim');
+        output.innerHTML += '<div class="prompt">root@fedora:[~/sterm] yardim</div>';
+        output.innerHTML += `<pre class="table-pre">${fullHelp}</pre>`;
+
+        // Otomatik deneme komutları
+        const demoCommands = [
+            { cmd: "saat", res: "12:20:39" },
+            { cmd: "analiz", res: "Sistem: Fedora Linux | CPU: Aktif | RAM: 40% Kullanımda" }
+        ];
+
+        for (let item of demoCommands) {
+            await new Promise(r => setTimeout(r, 1200));
+            output.innerHTML += `<div class="prompt">root@fedora:[~/sterm] ${item.cmd}</div><div class="cmd-output">>> ${item.res}</div>`;
+        }
+
+        activeLine.innerHTML = '<div class="prompt">root@fedora:[~/sterm] </div><span class="cursor"></span>';
+    }
+
+    run();
+</script>
+</body>
+</html>
